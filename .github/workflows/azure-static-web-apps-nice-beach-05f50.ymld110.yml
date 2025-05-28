@@ -1,0 +1,71 @@
+# GitHub Actions workflow for deploying to Azure Static Web Apps
+name: Azure Static Web Apps CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [main]
+
+jobs:
+  build_and_deploy:
+    # Run for normal pushes or while a PR is open (skip when PR is closed)
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # required for OIDC‑based auth to Azure
+      contents: read
+
+    steps:
+      # 1️⃣  Check out repository
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: false
+
+      # 👉 Uncomment the next two steps if your app needs a build (React / Vue / Angular / Next, etc.)
+      # - name: Set up Node (optional – choose the version your build needs)
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: 18
+
+      # - name: Install dependencies & run the build
+      #   run: |
+      #     npm ci
+      #     npm run build   # or whatever your build command is
+
+      # 2️⃣  Deploy (and optionally build) with the Static Web Apps action
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          # Secret created in your repository Settings ▸ Secrets ▸ Actions
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_NICE_BEACH_05F50D110 }}
+
+          action: upload
+
+          # ───────────── Repository / Build Configuration ─────────────
+          # Path to your app code.  
+          #   "./" for repo root, or a folder like "app" if you keep code there.
+          app_location: "/"
+
+          # Path to your built output.  
+          #   For plain HTML/CSS/JS sites this is the same as app_location.
+          #   For frameworks, use the build folder (e.g. "build" or "dist").
+          output_location: "/"
+
+          # Skip Oryx build when the site is already static.
+          # Remove or set to "false" when you uncomment the manual build steps above.
+          skip_app_build: true
+          # ─────────────────────────────────────────────────────────────
+
+  # 🔒 Clean‑up job: when a pull request is closed, tear down its preview environment.
+  close_preview:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove PR preview environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          action: close
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_NICE_BEACH_05F50D110 }}
